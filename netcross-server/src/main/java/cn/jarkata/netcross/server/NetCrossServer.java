@@ -1,7 +1,7 @@
 package cn.jarkata.netcross.server;
 
 import cn.jarkata.commons.concurrent.NamedThreadFactory;
-import cn.jarkata.netcross.server.handler.TcpProxyHandler;
+import cn.jarkata.netcross.server.handler.TCPProxyHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.*;
@@ -9,6 +9,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 
 import java.net.InetSocketAddress;
 
@@ -35,7 +36,9 @@ public class NetCrossServer {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline pipeline = ch.pipeline();
-                        pipeline.addLast(new TcpProxyHandler());
+                        pipeline.addLast(new IdleStateHandler(30, 30, 30));
+                        pipeline.addLast(new LoggingHandler());
+                        pipeline.addLast(new TCPProxyHandler());
                     }
                 });
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
