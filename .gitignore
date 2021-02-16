@@ -24,3 +24,5 @@ hs_err_pid*
 target/
 .idea/
 */dependency-reduced-pom.xml
+netcross-client/dependency-reduced-pom.xml
+netcross-server/dependency-reduced-pom.xml
