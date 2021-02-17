@@ -40,7 +40,7 @@ public class NetCrossClient {
         connected();
         Channel channel = proxyHandler.getChannel();
         channel.writeAndFlush(buffer);
-        return proxyHandler.getResponseData();
+        return proxyHandler.getMessage();
     }
 
     public String send(MessageWrap messageWrap) throws Exception {
@@ -48,7 +48,7 @@ public class NetCrossClient {
         ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer();
         Channel channel = proxyHandler.getChannel();
         channel.writeAndFlush(buffer.writeBytes(messageWrap.toString().getBytes(StandardCharsets.UTF_8)));
-        return proxyHandler.getResponseData();
+        return proxyHandler.getMessage();
     }
 
     public void connected() throws Exception {
@@ -56,15 +56,17 @@ public class NetCrossClient {
         bootstrap.group(new NioEventLoopGroup(1, new NamedThreadFactory("client")));
         bootstrap.channel(NioSocketChannel.class);
         bootstrap.option(ChannelOption.ALLOCATOR, ByteBufAllocator.DEFAULT)
+                .option(ChannelOption.SO_KEEPALIVE, true)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline pipeline = ch.pipeline();
                         pipeline.addLast(new LoggingHandler());
-                        pipeline.addLast(new IdleStateHandler(30, 30, 30));
+                        pipeline.addLast(new IdleStateHandler(15, 15, 15));
                         pipeline.addLast(proxyHandler);
                     }
                 });
+
         ChannelFuture channelFuture = bootstrap.connect(remoteSocketAddress).sync();
         channelFuture.addListener((listener) -> logger.info("连接成功{}", listener.isSuccess()));
     }

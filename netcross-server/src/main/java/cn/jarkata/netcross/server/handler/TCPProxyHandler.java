@@ -1,7 +1,9 @@
 package cn.jarkata.netcross.server.handler;
 
+import cn.jarkata.netcross.server.cache.ChannelCache;
 import cn.jarkata.netcross.wrap.MessageWrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
@@ -12,43 +14,45 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class TCPProxyHandler extends ChannelInboundHandlerAdapter {
 
     private final Logger logger = LoggerFactory.getLogger(TCPProxyHandler.class);
 
-    private static final Map<String, ChannelHandlerContext> cache = new ConcurrentHashMap<>();
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("channel={}", ctx.channel());
-    }
-
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf buf = (ByteBuf) msg;
+        logger.info("ContextChannel={}", ctx);
         try {
-            MessageWrap decode = MessageWrap.valueOf(buf.toString(StandardCharsets.UTF_8));
-            System.out.println(decode);
-            logger.info("ContextChannel={}", ctx);
+            String message = buf.toString(StandardCharsets.UTF_8);
+            String firstLine = message.split("\\n")[0];
+            if (firstLine.startsWith("GET") || firstLine.startsWith("POST")) {
+                ChannelCache.setBrowsChannel(ctx);
+                //
+                ChannelHandlerContext clientChannel = ChannelCache.getClientProxyChannel();
+                logger.info("Ctx:{}", clientChannel);
+                SocketAddress socketAddress = clientChannel.channel().remoteAddress();
+                logger.info("RemoteSocketAddress={}", socketAddress);
+                MessageWrap messageWrap = new MessageWrap("server-request", message);
+                writeAndFlush(clientChannel, messageWrap);
+                return;
+            }
+            MessageWrap decode = MessageWrap.valueOf(message);
             logger.info("Buffer:{}", decode);
+            String head = decode.getHead();
+            //客户端
+            if (head.startsWith("client-connect")) {
+                ChannelCache.setClientProxyChannel(ctx);
+                writeAndFlush(ctx, new MessageWrap("server-response", "success"));
+            } else if (head.startsWith("client-response")) {
+                String body = decode.getBody();
+                ChannelHandlerContext browsChannel = ChannelCache.getBrowsChannel();
+                writeAndFlush(browsChannel, body.getBytes(StandardCharsets.UTF_8));
+                writeAndFlush(ctx, new MessageWrap("server-response", "success"));
+            }
 
-//            String message = buf.toString(StandardCharsets.UTF_8);
-//            if (message.startsWith("client")) {
-//                String host = message.split("\\|")[1];
-//                cache.put(host, ctx);
-//                ctx.writeAndFlush(Unpooled.copiedBuffer("success".getBytes(StandardCharsets.UTF_8)));
-//            } else {
-//                ChannelHandlerContext channelHandlerContext = cache.get("localhost:8080");
-//                logger.info("Ctx:{}", channelHandlerContext);
-//                SocketAddress socketAddress = channelHandlerContext.channel().remoteAddress();
-//                logger.info("RemoteSocketAddress={}", socketAddress);
-//                channelHandlerContext.writeAndFlush(Unpooled.copiedBuffer(message.getBytes(StandardCharsets.UTF_8)));
-//            }
-            ctx.writeAndFlush(msg);
         } finally {
             if (ReferenceCountUtil.refCnt(buf) > 0) {
                 ReferenceCountUtil.release(buf);
@@ -59,6 +63,27 @@ public class TCPProxyHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         logger.error("异常：" + ctx, cause);
+    }
+
+
+    public void writeAndFlush(ChannelHandlerContext channel, MessageWrap messageWrap) {
+        writeAndFlush(channel, messageWrap.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    public void writeAndFlush(ChannelHandlerContext channel, byte[] message) {
+        ByteBuf buffer = null;
+        try {
+            buffer = PooledByteBufAllocator.DEFAULT.directBuffer();
+            buffer.writeBytes(message);
+            channel.writeAndFlush(buffer).addListener((listener) -> {
+                boolean success = listener.isSuccess();
+                logger.info("Result={}", success);
+                Throwable cause = listener.cause();
+                logger.info("原因：", cause);
+            });
+        } finally {
+
+        }
     }
 
     /**

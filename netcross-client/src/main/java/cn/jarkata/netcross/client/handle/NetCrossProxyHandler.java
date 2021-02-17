@@ -1,7 +1,9 @@
 package cn.jarkata.netcross.client.handle;
 
+import cn.jarkata.netcross.client.NetCrossClient;
 import cn.jarkata.netcross.wrap.MessageWrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -21,7 +23,7 @@ public class NetCrossProxyHandler extends ChannelInboundHandlerAdapter {
 
     private Channel channel;
 
-    private String responseData;
+    private String message;
 
     public NetCrossProxyHandler() {
     }
@@ -34,10 +36,28 @@ public class NetCrossProxyHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        //文本传输协议
+        this.message = ((ByteBuf) msg).toString(StandardCharsets.UTF_8);
+        logger.info("响应之后的数据：{}", message);
+        String firstLine = message.split("\\n")[0];
+        //发送单纯的http请求
+        if (firstLine.startsWith("GET") || firstLine.startsWith("POST") || firstLine.startsWith("HTTP")) {
+            count.countDown();
+            return;
+        }
+        
+        MessageWrap messageWrap = MessageWrap.valueOf(this.message);
+        String head = messageWrap.getHead();
+        if (head.startsWith("server-request")) {
+            NetCrossClient client = new NetCrossClient("localhost", 8080);
+            String response = client.send(Unpooled.copiedBuffer(messageWrap.getBody().getBytes(StandardCharsets.UTF_8)));
+            ctx.writeAndFlush(Unpooled.copiedBuffer(new MessageWrap("client-response", response).toString().getBytes(StandardCharsets.UTF_8)));
+        } else if (head.startsWith("server-response")) {
+            count.countDown();
 
-        this.responseData = ((ByteBuf) msg).toString(StandardCharsets.UTF_8);
-        logger.info("解析之后的数据：{}", MessageWrap.valueOf(this.responseData));
-//
+        }
+        logger.info("解析之后的数据：{}", MessageWrap.valueOf(this.message));
+
 //        String message = responseData.toString(StandardCharsets.UTF_8);
 //        logger.info("ClientResponse::{}", responseData.toString(StandardCharsets.UTF_8));
 //        if (message.indexOf("HTTP/1.1") > 0) {
@@ -46,12 +66,12 @@ public class NetCrossProxyHandler extends ChannelInboundHandlerAdapter {
 //            logger.info("HTTP响应：{}", buf.toString(StandardCharsets.UTF_8));
 //            ctx.writeAndFlush(buf);
 //        }
-        count.countDown();
+
     }
 
-    public String getResponseData() throws InterruptedException {
+    public String getMessage() throws InterruptedException {
         count.await();
-        return this.responseData;
+        return this.message;
     }
 
     public Channel getChannel() throws Exception {
