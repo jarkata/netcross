@@ -63,7 +63,7 @@
                                 <!-- 指定main方法 -->
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>cn.jarkata.netcross.server.NetCrossStarter</mainClass>
+                                    <mainClass>cn.jarkata.netcross.server.ServerStater</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

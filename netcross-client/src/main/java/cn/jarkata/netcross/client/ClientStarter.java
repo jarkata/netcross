@@ -2,7 +2,7 @@ package cn.jarkata.netcross.client;
 
 import cn.jarkata.netcross.wrap.MessageWrap;
 
-public class NetCrossStarter {
+public class ClientStarter {
 
     public static void main(String[] args) throws Exception {
         NetCrossClient client = new NetCrossClient("localhost", 8089);

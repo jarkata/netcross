@@ -25,8 +25,12 @@ public class MessageWrap implements Serializable {
     }
 
     public static MessageWrap valueOf(String message) {
-        String head = message.split("\\|")[0];
-        String body = message.split("\\|")[1];
+        String[] messageSplit = message.split("\\|");
+        if (messageSplit.length < 2) {
+            throw new IllegalArgumentException("响应报文不合法");
+        }
+        String head = messageSplit[0];
+        String body = messageSplit[1];
         return new MessageWrap(head, body);
     }
 }
