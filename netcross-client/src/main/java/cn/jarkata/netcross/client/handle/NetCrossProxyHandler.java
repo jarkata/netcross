@@ -45,7 +45,6 @@ public class NetCrossProxyHandler extends ChannelInboundHandlerAdapter {
             count.countDown();
             return;
         }
-        
         MessageWrap messageWrap = MessageWrap.valueOf(this.message);
         String head = messageWrap.getHead();
         if (head.startsWith("server-request")) {
@@ -54,19 +53,7 @@ public class NetCrossProxyHandler extends ChannelInboundHandlerAdapter {
             ctx.writeAndFlush(Unpooled.copiedBuffer(new MessageWrap("client-response", response).toString().getBytes(StandardCharsets.UTF_8)));
         } else if (head.startsWith("server-response")) {
             count.countDown();
-
         }
-        logger.info("解析之后的数据：{}", MessageWrap.valueOf(this.message));
-
-//        String message = responseData.toString(StandardCharsets.UTF_8);
-//        logger.info("ClientResponse::{}", responseData.toString(StandardCharsets.UTF_8));
-//        if (message.indexOf("HTTP/1.1") > 0) {
-//            NetCrossClient client = new NetCrossClient("localhost", 8080);
-//            ByteBuf buf = client.send(responseData);
-//            logger.info("HTTP响应：{}", buf.toString(StandardCharsets.UTF_8));
-//            ctx.writeAndFlush(buf);
-//        }
-
     }
 
     public String getMessage() throws InterruptedException {
