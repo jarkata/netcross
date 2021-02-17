@@ -15,9 +15,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 
 @ChannelHandler.Sharable
-public class NetCrossProxyHandler extends ChannelInboundHandlerAdapter {
+public class TCPProxyHandler extends ChannelInboundHandlerAdapter {
 
-    private final Logger logger = LoggerFactory.getLogger(NetCrossProxyHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(TCPProxyHandler.class);
 
     private final CountDownLatch count = new CountDownLatch(1);
 
@@ -25,7 +25,7 @@ public class NetCrossProxyHandler extends ChannelInboundHandlerAdapter {
 
     private String message;
 
-    public NetCrossProxyHandler() {
+    public TCPProxyHandler() {
     }
 
 

@@ -14,7 +14,7 @@
     <version>${netcross.version}</version>
 
     <name>net-cross-client</name>
-    <url>http://www.jarkata.com</url>
+    <url>http://www.jarkata.cn</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

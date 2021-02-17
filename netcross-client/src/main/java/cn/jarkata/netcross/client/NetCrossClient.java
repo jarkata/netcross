@@ -1,7 +1,7 @@
 package cn.jarkata.netcross.client;
 
 import cn.jarkata.commons.concurrent.NamedThreadFactory;
-import cn.jarkata.netcross.client.handle.NetCrossProxyHandler;
+import cn.jarkata.netcross.client.handle.TCPProxyHandler;
 import cn.jarkata.netcross.wrap.MessageWrap;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -24,7 +24,7 @@ public class NetCrossClient {
     private final Logger logger = LoggerFactory.getLogger(NetCrossClient.class);
 
     private final InetSocketAddress remoteSocketAddress;
-    private final NetCrossProxyHandler proxyHandler;
+    private final TCPProxyHandler proxyHandler;
 
 
     public NetCrossClient(String host, int port) {
@@ -33,7 +33,7 @@ public class NetCrossClient {
 
     public NetCrossClient(InetSocketAddress remoteSocketAddress) {
         this.remoteSocketAddress = remoteSocketAddress;
-        proxyHandler = new NetCrossProxyHandler();
+        proxyHandler = new TCPProxyHandler();
     }
 
     public String send(ByteBuf buffer) throws Exception {

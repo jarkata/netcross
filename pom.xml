@@ -13,9 +13,9 @@
     <url>http://www.jarkata.com</url>
 
     <modules>
+        <module>netcross-protocol</module>
         <module>netcross-client</module>
         <module>netcross-server</module>
-        <module>netcross-protocol</module>
     </modules>
 
     <properties>
